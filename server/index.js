@@ -2,6 +2,8 @@ import dotenv from 'dotenv'
 import express from 'express'
 import cors from 'cors'
 import connectDB from './config/db.js'
+import pino from "pino";
+const logger = pino();
 
 import healthRoutes from './routes/healthRoutes.js'
 import authRoutes from './routes/authRoutes.js'
@@ -15,10 +17,10 @@ dotenv.config()
 const app = express()
 
 app.use(cors({
-  origin: ['localhost:5173'],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Demo-Token'],
   optionsSuccessStatus: 200
 }));
 
@@ -30,14 +32,17 @@ app.get('/test-cors', (req, res) => {
 
 connectDB()
 
+//demo routes
+app.use('/api/demo', demoRoutes)
+
+//routes
 app.use('/api', healthRoutes)
 app.use('/api', authRoutes)
 app.use('/api', promptRoutes)
-app.use('/api/demo', demoRoutes)
 app.use('/api', webhookRoutes)
 app.use('/api', userRoutes)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+  logger.info(`Server running on port ${PORT}`)
 })

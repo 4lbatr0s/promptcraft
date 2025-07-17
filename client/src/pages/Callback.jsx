@@ -22,7 +22,7 @@ export default function Callback() {
 
   useEffect(() => {
     if (shouldRedirect) {
-      navigate('/')
+      navigate('/dashboard')
     }
   }, [shouldRedirect, navigate])
 

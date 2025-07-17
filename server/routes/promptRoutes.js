@@ -6,7 +6,6 @@ const router = express.Router()
 
 router.use(authMiddleware)
 
-// Original non-streaming route
 router.post('/convert-prompt', convertPrompt)
 
 // New streaming route

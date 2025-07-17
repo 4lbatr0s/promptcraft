@@ -3,6 +3,8 @@ import {
   createOrUpdateUser, 
   updateLastLogin
 } from '../services/userService.js'
+import pino from "pino";
+const logger = pino();
 
 export const syncUserFromCallback = async (req, res) => {
   try {
@@ -24,7 +26,7 @@ export const syncUserFromCallback = async (req, res) => {
       isEmailVerified: isEmailVerified || false
     })
     
-    console.log(`User synced via callback: ${email}`)
+    logger.info(`User synced via callback: ${email}`)
     
     res.json({ 
       success: true, 
@@ -32,7 +34,7 @@ export const syncUserFromCallback = async (req, res) => {
       message: 'User synchronized successfully'
     })
   } catch (error) {
-    console.error('Error in syncUserFromCallback:', error)
+    logger.error('Error in syncUserFromCallback:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Failed to sync user from callback' 
@@ -61,7 +63,7 @@ export const getOrCreateUser = async (req, res) => {
       }
       
       user = await createOrUpdateUser(userData)
-      console.log(`Created user via fallback: ${email}`)
+      logger.info(`Created user via fallback: ${email}`)
     } else {
       // Update last login time
       await updateLastLogin(kindeId)
@@ -72,7 +74,7 @@ export const getOrCreateUser = async (req, res) => {
       data: user 
     })
   } catch (error) {
-    console.error('Error in getOrCreateUser:', error)
+    logger.error('Error in getOrCreateUser:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get or create user' 
@@ -99,7 +101,7 @@ export const getUserProfile = async (req, res) => {
       data: user 
     })
   } catch (error) {
-    console.error('Error getting user profile:', error)
+    logger.error('Error getting user profile:', error)
     res.status(404).json({ 
       success: false, 
       error: 'User not found' 
@@ -134,7 +136,7 @@ export const updateUserProfile = async (req, res) => {
       data: user 
     })
   } catch (error) {
-    console.error('Error updating user profile:', error)
+    logger.error('Error updating user profile:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Failed to update user profile' 

@@ -1,5 +1,7 @@
 import crypto from 'crypto'
 import { createOrUpdateUser, findUserByKindeId } from '../services/userService.js'
+import pino from "pino";
+const logger = pino();
 
 // Verify Kinde webhook signature
 function verifyWebhookSignature(payload, signature, secret) {
@@ -14,7 +16,7 @@ function verifyWebhookSignature(payload, signature, secret) {
       Buffer.from(expectedSignature)
     )
   } catch (error) {
-    console.error('Webhook signature verification error:', error)
+    logger.error('Webhook signature verification error:', error)
     return false
   }
 }
@@ -43,7 +45,7 @@ export const handleUserCreated = async (req, res) => {
     
     res.json({ success: true, message: 'User created/updated successfully' })
   } catch (error) {
-    console.error('Error handling user.created webhook:', error)
+    logger.error('Error handling user.created webhook:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Failed to process user creation' 
@@ -75,7 +77,7 @@ export const handleUserUpdated = async (req, res) => {
     
     res.json({ success: true, message: 'User updated successfully' })
   } catch (error) {
-    console.error('Error handling user.updated webhook:', error)
+    logger.error('Error handling user.updated webhook:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Failed to process user update' 
@@ -97,11 +99,11 @@ export const handleUserDeleted = async (req, res) => {
     
     // For now, we'll just log the deletion
     // In production, you might want to soft delete or archive the user
-    console.log(`User deleted: ${user.id}`)
+    logger.info(`User deleted: ${user.id}`)
     
     res.json({ success: true, message: 'User deletion logged' })
   } catch (error) {
-    console.error('Error handling user.deleted webhook:', error)
+    logger.error('Error handling user.deleted webhook:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Failed to process user deletion' 
@@ -116,7 +118,7 @@ export const handleWebhook = async (req, res) => {
     const webhookSecret = process.env.KINDE_WEBHOOK_SECRET
     
     if (!webhookSecret) {
-      console.error('KINDE_WEBHOOK_SECRET not configured')
+      logger.error('KINDE_WEBHOOK_SECRET not configured')
       return res.status(500).json({ 
         success: false, 
         error: 'Webhook secret not configured' 
@@ -125,7 +127,7 @@ export const handleWebhook = async (req, res) => {
     
     const payload = JSON.stringify(req.body)
     if (!verifyWebhookSignature(payload, signature, webhookSecret)) {
-      console.error('Invalid webhook signature')
+      logger.error('Invalid webhook signature')
       return res.status(401).json({ 
         success: false, 
         error: 'Invalid signature' 
@@ -142,14 +144,14 @@ export const handleWebhook = async (req, res) => {
       case 'user.deleted':
         return await handleUserDeleted(req, res)
       default:
-        console.log(`Unhandled webhook type: ${type}`)
+        logger.info(`Unhandled webhook type: ${type}`)
         return res.status(200).json({ 
           success: true, 
           message: 'Webhook received but not handled' 
         })
     }
   } catch (error) {
-    console.error('Error handling webhook:', error)
+    logger.error('Error handling webhook:', error)
     res.status(500).json({ 
       success: false, 
       error: 'Internal server error' 

@@ -1,5 +1,7 @@
 import PromptConversion from '../models/PromptConversion.js'
 import { convertPromptWithFallback, convertPromptWithFallbackStream } from '../llmService.js'
+import pino from "pino";
+const logger = pino();
 
 // Original non-streaming endpoint
 export const convertPrompt = async (req, res) => {
@@ -24,7 +26,7 @@ export const convertPrompt = async (req, res) => {
     
     res.json({ success: true, data: record })
   } catch (err) {
-    console.error('Prompt conversion error:', err)
+    logger.error('Prompt conversion error:', err)
     res.status(500).json({ 
       success: false, 
       error: err.message 
@@ -65,7 +67,7 @@ export const convertPromptStream = async (req, res) => {
           }
         }
       } catch (writeError) {
-        console.error('Error writing chunk:', writeError)
+        logger.error('Error writing chunk:', writeError)
       }
     }
     
@@ -79,7 +81,7 @@ export const convertPromptStream = async (req, res) => {
     })}\n\n`)
     
     try {
-      console.log(`generatedJson read from promptController:`, json)
+      logger.info(`generatedJson read from promptController:`, json)
 
       const record = await PromptConversion.create({
         originalPrompt: prompt,
@@ -95,7 +97,7 @@ export const convertPromptStream = async (req, res) => {
       })}\n\n`)
       
     } catch (dbError) {
-      console.error('Database save error:', dbError)
+      logger.error('Database save error:', dbError)
       res.write(`data: ${JSON.stringify({ 
         type: 'save_error', 
         error: dbError.message 
@@ -103,7 +105,7 @@ export const convertPromptStream = async (req, res) => {
     }
     
   } catch (err) {
-    console.error('Streaming conversion error:', err)
+    logger.error('Streaming conversion error:', err)
     res.write(`data: ${JSON.stringify({ 
       type: 'error', 
       error: err.message 
@@ -125,7 +127,7 @@ export const getHistory = async (req, res) => {
     
     res.status(200).json({ success: true, data: history })
   } catch (err) {
-    console.error('History fetch error:', err)
+    logger.error('History fetch error:', err)
     res.status(500).json({ 
       success: false, 
       error: err.message 

@@ -9,6 +9,8 @@ import {
 } from './constants/prompts.js'
 import { promptJsonSchema } from './schemas/promptSchema.js'
 import { GEMINI_MODEL, MISTRAL_MODEL, COHERE_MODEL, PROVIDER_INFOS } from './constants/modelInfo.js'
+import pino from "pino";
+const logger = pino();
 
 const createProviders = () => {
   const providers = []
@@ -72,10 +74,10 @@ async function streamLLM(model, prompt, onChunk, maxRetries = 3) {
       // Stream the response
       const stream = await model.stream(messages)
 
-      console.log('stream is here:', stream)
+      logger.info('stream is here:', stream)
 
       for await (const chunk of stream) {
-        console.log('chunk of stream:', chunk);
+        logger.info('chunk of stream:', chunk);
         const content = chunk.contentconvertPromptWithFallbackStream
         let chunkCount = 1;
         if (content) {
@@ -90,22 +92,22 @@ async function streamLLM(model, prompt, onChunk, maxRetries = 3) {
         }
       }
 
-      console.log(`${model.constructor.name} streaming completed`)
+      logger.info(`${model.constructor.name} streaming completed`)
 
-      console.log(`full content is: ${fullContent}`);
+      logger.info(`full content is: ${fullContent}`);
 
       // Process the final content
       const cleanJson = extractJsonFromMarkdown(fullContent)
 
-      console.log(`cleanJson is:`, cleanJson);
+      logger.info(`cleanJson is:`, cleanJson);
 
       const jsonResponse = JSON.parse(cleanJson)
 
-      console.log(`jsonResponse is:`, jsonResponse);
+      logger.info(`jsonResponse is:`, jsonResponse);
 
       const validatedJson = promptJsonSchema.parse(jsonResponse)
 
-      console.log(`validatedJson is:`, validatedJson);
+      logger.info(`validatedJson is:`, validatedJson);
 
       onChunk({
         type: 'complete',
@@ -117,7 +119,7 @@ async function streamLLM(model, prompt, onChunk, maxRetries = 3) {
       return validatedJson
 
     } catch (err) {
-      console.log(`Streaming attempt ${attempt + 1} failed:`, err.message)
+      logger.error(`Streaming attempt ${attempt + 1} failed:`, err.message)
 
       onChunk({
         type: 'error',
@@ -149,7 +151,7 @@ async function streamLLM(model, prompt, onChunk, maxRetries = 3) {
           return validatedJson
 
         } catch (correctionErr) {
-          console.log('JSON correction failed:', correctionErr.message)
+          logger.error('JSON correction failed:', correctionErr.message)
           onChunk({
             type: 'error',
             error: correctionErr.message,
@@ -192,7 +194,7 @@ export async function convertPromptWithFallbackStream(prompt, onChunk) {
 
   for (const provider of providers) {
     try {
-      console.log(`Attempting streaming conversion with ${provider.name}...`)
+      logger.info(`Attempting streaming conversion with ${provider.name}...`)
 
       onChunk({
         type: 'provider',
@@ -202,8 +204,8 @@ export async function convertPromptWithFallbackStream(prompt, onChunk) {
 
       const result = await streamLLM(provider.model, prompt, onChunk)
 
-      console.log(`Successfully converted with ${provider.name}`)
-      console.log('Result from streamLLM:', result)
+      logger.info(`Successfully converted with ${provider.name}`)
+      logger.info('Result from streamLLM:', result)
 
       return { 
         provider: provider.name,
@@ -211,7 +213,7 @@ export async function convertPromptWithFallbackStream(prompt, onChunk) {
       }
 
     } catch (err) {
-      console.error(`Error with ${provider.name}:`, err.message)
+      logger.error(`Error with ${provider.name}:`, err.message)
       lastError = err
 
       onChunk({
@@ -240,7 +242,7 @@ export async function convertPromptWithFallback(prompt) {
 
   for (const provider of providers) {
     try {
-      console.log(`Attempting conversion with ${provider.name}...`)
+      logger.info(`Attempting conversion with ${provider.name}...`)
 
       // Use non-streaming version for backward compatibility
       const nonStreamingModel = new provider.model.constructor({
@@ -258,11 +260,11 @@ export async function convertPromptWithFallback(prompt) {
       const jsonResponse = JSON.parse(cleanJson)
       const result = promptJsonSchema.parse(jsonResponse)
 
-      console.log(`Successfully converted with ${provider.name}`)
+      logger.info(`Successfully converted with ${provider.name}`)
       return { provider: provider.name, json: result }
 
     } catch (err) {
-      console.error(`Error with ${provider.name}:`, err.message)
+      logger.error(`Error with ${provider.name}:`, err.message)
       lastError = err
 
       if (!isRetryableError(err)) {

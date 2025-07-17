@@ -1,14 +1,16 @@
 import mongoose from 'mongoose'
+import pino from "pino";
+const logger = pino();
 
 const connectDB = async () => {
   try {
     //todo: remove this
-    const conn = await mongoose.connect('mongodb+srv://serhat:lIR0nUG8YYsqPngG@cluster0.9jvil.mongodb.net/promptcraft', {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
     })
     
-    console.log(`MongoDB connected: ${conn.connection.host}`)
+    logger.info(`MongoDB connected: ${conn.connection.host}`)
   } catch (error) {
-    console.error('MongoDB connection error:', error)
+    logger.error('MongoDB connection error:', error)
     process.exit(1)
   }
 }

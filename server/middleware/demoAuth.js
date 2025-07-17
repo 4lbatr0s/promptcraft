@@ -2,41 +2,41 @@ import { randomBytes } from 'crypto';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
+import pino from "pino";
+const logger = pino();
 
 dotenv.config();
 
-// Better Redis connection handling
 let redis = null;
 
 const connectRedis = () => {
   try {
-    console.log('Attempting to connect to Redis...');
-    console.log(`REDIS URL:${process.env.REDIS_URL}`)
+    logger.info('Attempting to connect to Redis...');
     redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
     
     redis.on('connect', () => {
-      console.log('✅ Redis connected successfully!');
+      logger.info('✅ Redis connected successfully!');
     });
     
     redis.on('ready', () => {
-      console.log('✅ Redis is ready to accept commands');
+      logger.info('✅ Redis is ready to accept commands');
     });
     
     redis.on('error', (error) => {
-      console.error('❌ Redis connection error:', error.message);
+      logger.error('❌ Redis connection error:', error.message);
       redis = null; // Set to null on error
     });
     
     redis.on('close', () => {
-      console.log('⚠️  Redis connection closed');
+      logger.info('⚠️  Redis connection closed');
     });
     
     redis.on('reconnecting', () => {
-      console.log('🔄 Redis reconnecting...');
+      logger.info('🔄 Redis reconnecting...');
     });
     
   } catch (error) {
-    console.error('❌ Failed to create Redis instance:', error.message);
+    logger.error('❌ Failed to create Redis instance:', error.message);
     redis = null;
   }
 };
@@ -185,7 +185,7 @@ export const demoAuthMiddleware = async (req, res, next) => {
   try {
     if (req.user) return next();
 
-    const demoToken = req.headers['x-demo-token'];
+    const demoToken = req.headers['X-Demo-Token'];
     
     if (demoToken && await validateDemoToken(demoToken)) {
       req.isDemoUser = true;
@@ -195,7 +195,7 @@ export const demoAuthMiddleware = async (req, res, next) => {
 
     return demoRateLimiter(req, res, next);
   } catch (error) {
-    console.error('Demo auth error:', error);
+    logger.error('Demo auth error:', error);
     return demoRateLimiter(req, res, next);
   }
 };
@@ -213,7 +213,7 @@ export const generateDemoTokenHandler = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Token generation error:', error);
+    logger.error('Token generation error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate demo token'
@@ -243,7 +243,7 @@ export const checkDemoUsage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Usage check error:', error);
+    logger.error('Usage check error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to check usage'
