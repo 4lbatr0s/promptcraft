@@ -39,6 +39,10 @@ export default function Landing() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  if (isLoading || isAuthenticated) {
+    return null;
+  }
+
   const handleLogin = async () => {
     try {
       await login();
@@ -46,14 +50,6 @@ export default function Landing() {
       console.error("Login failed:", error);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-white text-lg">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 text-white overflow-x-hidden">

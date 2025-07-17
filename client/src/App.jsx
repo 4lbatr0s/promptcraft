@@ -83,7 +83,6 @@ function AppContent() {
 
 function App() {
   const kindeConfig = urlResolver.getKindeConfig()
-  
   return (
     <KindeProvider
       clientId={kindeConfig.clientId}

@@ -4,6 +4,9 @@ import cors from 'cors'
 import connectDB from './config/db.js'
 import pino from "pino";
 const logger = pino();
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import compression from "compression";
 
 import healthRoutes from './routes/healthRoutes.js'
 import authRoutes from './routes/authRoutes.js'
@@ -25,9 +28,25 @@ app.use(cors({
 }));
 
 app.use(express.json())
+app.use(helmet());
+app.use(compression());
 
 app.get('/test-cors', (req, res) => {
   res.json({ message: 'CORS is working!' });
+});
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/demo')) {
+    return next();
+  }
+  return globalLimiter(req, res, next);
 });
 
 connectDB()
