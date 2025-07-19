@@ -4,7 +4,6 @@ const logger = pino();
 
 const connectDB = async () => {
   try {
-    //todo: remove this
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
     })
     
