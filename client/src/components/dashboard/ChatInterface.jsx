@@ -46,9 +46,17 @@ export default function ChatInterface({ message, onCopy, onDownload, isStreaming
             ) : (
               <div className="space-y-3">
                 {isStreaming ? (
-                  <div className="flex items-center gap-2 text-blue-300">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing your request...</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-blue-300">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Processing your request...</span>
+                    </div>
+                    {message.content && (
+                      <div className="break-words whitespace-pre-wrap overflow-wrap-anywhere text-gray-200">
+                        {message.content}
+                        <span className="inline-block w-2 h-4 bg-blue-400 ml-1 animate-pulse" />
+                      </div>
+                    )}
                   </div>
                 ) : message.jsonResult ? (
                   <div className="space-y-4">

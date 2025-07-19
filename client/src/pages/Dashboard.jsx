@@ -82,6 +82,9 @@ export default function Dashboard() {
     setIsProcessing(true);
     setStreamingText("");
     setCurrentProvider(null);
+    
+    const promptToProcess = prompt;
+    setPrompt("");
 
     const processingMessage = {
       id: Date.now() + 1,
@@ -96,7 +99,7 @@ export default function Dashboard() {
     try {
       const response = await authenticatedFetch(urlResolver.getConvertPromptStreamUrl(), {
         method: "POST",
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: promptToProcess }),
       });
 
       if (!response.ok) {
@@ -130,11 +133,54 @@ export default function Dashboard() {
                   
                   if (data.type === "provider") {
                     setCurrentProvider(data.provider);
+                  } else if (data.type === "chunk") {
+                    // Update the streaming message with new content
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === processingMessage.id 
+                        ? { 
+                            ...msg, 
+                            content: data.fullContent || data.content,
+                            isStreaming: true 
+                          }
+                        : msg
+                    ));
                   } else if (data.type === "complete") {
                     finalJson = data.json;
                     setStreamingText("");
+                    // Update final message with JSON result
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === processingMessage.id 
+                        ? { 
+                            ...msg, 
+                            content: "", 
+                            isStreaming: false, 
+                            jsonResult: finalJson 
+                          }
+                        : msg
+                    ));
                   } else if (data.type === "saved") {
                     await loadConversions();
+                  } else if (data.type === "provider_error") {
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === processingMessage.id 
+                        ? { 
+                            ...msg, 
+                            content: `Error with ${data.provider}: ${data.error}`, 
+                            isStreaming: true 
+                          }
+                        : msg
+                    ));
+                  } else if (data.type === "error") {
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === processingMessage.id 
+                        ? { 
+                            ...msg, 
+                            content: `Error: ${data.error}`, 
+                            isStreaming: false,
+                            isError: true 
+                          }
+                        : msg
+                    ));
                   }
                 } catch (error) {
                   console.error("Parse error:", error);
@@ -145,12 +191,7 @@ export default function Dashboard() {
         }
       }
 
-      // Update final message
-      setMessages(prev => prev.map(msg => 
-        msg.id === processingMessage.id 
-          ? { ...msg, content: finalJson, isStreaming: false, jsonResult: finalJson }
-          : msg
-      ));
+      // Final message is now handled in the streaming loop above
 
     } catch (error) {
       console.error("Streaming error:", error);
@@ -161,7 +202,6 @@ export default function Dashboard() {
       ));
     } finally {
       setIsProcessing(false);
-      setPrompt("");
     }
   };
 
