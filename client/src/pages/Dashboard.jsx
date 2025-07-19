@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,11 +23,11 @@ import { useKindeAuth } from '@kinde-oss/kinde-auth-react'
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch.js'
 import urlResolver from '../lib/urlResolver.js'
 
-// Import dashboard components
-import ChatInterface from "@/components/dashboard/ChatInterface";
-import JsonViewer from "@/components/dashboard/JsonViewer";
-import StatsOverview from "@/components/dashboard/StatsOverview";
-import PromptSuggestions from "@/components/dashboard/PromptSuggestions";
+// Lazy load heavy components
+const ChatInterface = React.lazy(() => import("@/components/dashboard/ChatInterface"));
+const JsonViewer = React.lazy(() => import("@/components/dashboard/JsonViewer"));
+const StatsOverview = React.lazy(() => import("@/components/dashboard/StatsOverview"));
+const PromptSuggestions = React.lazy(() => import("@/components/dashboard/PromptSuggestions"));
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useKindeAuth()
@@ -265,7 +265,9 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Stats Overview */}
-        <StatsOverview conversions={conversions} />
+        <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>}>
+          <StatsOverview conversions={conversions} />
+        </Suspense>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-6">
           {/* Chat Interface */}
@@ -286,13 +288,14 @@ export default function Dashboard() {
                       <div className="space-y-4">
                         <AnimatePresence>
                           {messages.map((message) => (
-                            <ChatInterface
-                              key={message.id}
-                              message={message}
-                              onCopy={handleCopyJson}
-                              onDownload={handleDownloadJson}
-                              isStreaming={message.isStreaming}
-                            />
+                            <Suspense key={message.id} fallback={<div className="h-16 flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin text-blue-400" /></div>}>
+                              <ChatInterface
+                                message={message}
+                                onCopy={handleCopyJson}
+                                onDownload={handleDownloadJson}
+                                isStreaming={message.isStreaming}
+                              />
+                            </Suspense>
                           ))}
                         </AnimatePresence>
                         
@@ -359,7 +362,9 @@ export default function Dashboard() {
           {/* Sidebar */}
           <div className="space-y-6 h-[700px] flex flex-col">
             <div className="flex-1">
-              <PromptSuggestions onSuggestionClick={setPrompt} />
+              <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-400" /></div>}>
+                <PromptSuggestions onSuggestionClick={setPrompt} />
+              </Suspense>
             </div>
             
             {/* Quick Actions */}
