@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Send, 
   Copy, 
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const [conversions, setConversions] = useState([]);
   const [streamingText, setStreamingText] = useState("");
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
   const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
@@ -228,63 +230,78 @@ export default function Dashboard() {
         <div className="grid lg:grid-cols-3 gap-6 mb-6">
           {/* Chat Interface */}
           <div className="lg:col-span-2">
-            <Card className="bg-black/20 backdrop-blur-xl border-white/10 h-[600px] flex flex-col">
-              <CardHeader className="border-b border-white/10">
+            <Card className="bg-black/20 backdrop-blur-xl border-white/10 h-[700px] flex flex-col">
+              <CardHeader className="border-b border-white/10 flex-shrink-0">
                 <CardTitle className="text-white flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-blue-400" />
                   Conversation
                 </CardTitle>
               </CardHeader>
               
-              <CardContent className="flex-1 p-0">
+              <CardContent className="flex-1 p-0 min-h-0">
                 <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <AnimatePresence>
-                      {messages.map((message) => (
-                        <ChatInterface
-                          key={message.id}
-                          message={message}
-                          onCopy={handleCopyJson}
-                          onDownload={handleDownloadJson}
-                          isStreaming={message.isStreaming}
-                        />
-                      ))}
-                    </AnimatePresence>
-                    
-                    {isProcessing && currentProvider && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-2 text-blue-300"
-                      >
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Processing with {currentProvider}...</span>
-                      </motion.div>
-                    )}
-                    
-                    <div ref={messagesEndRef} />
+                  {/* Messages Area with ScrollArea */}
+                  <div className="flex-1 min-h-0">
+                    <ScrollArea className="h-full px-4 py-4">
+                      <div className="space-y-4">
+                        <AnimatePresence>
+                          {messages.map((message) => (
+                            <ChatInterface
+                              key={message.id}
+                              message={message}
+                              onCopy={handleCopyJson}
+                              onDownload={handleDownloadJson}
+                              isStreaming={message.isStreaming}
+                            />
+                          ))}
+                        </AnimatePresence>
+                        
+                        {isProcessing && currentProvider && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 text-blue-300"
+                          >
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Processing with {currentProvider}...</span>
+                          </motion.div>
+                        )}
+                        
+                        <div ref={messagesEndRef} />
+                      </div>
+                    </ScrollArea>
                   </div>
                   
                   {/* Input Form */}
-                  <form onSubmit={handleSubmit} className="border-t border-white/10 p-4">
-                    <div className="flex gap-3">
-                      <Textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Describe what you want your AI to do..."
-                        className="flex-1 bg-white/5 border-white/20 text-white placeholder-blue-200 resize-none"
-                        rows={2}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSubmit(e);
-                          }
-                        }}
-                      />
+                  <div className="border-t border-white/10 p-4 flex-shrink-0">
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <Textarea
+                          ref={textareaRef}
+                          value={prompt}
+                          onChange={(e) => setPrompt(e.target.value)}
+                          placeholder="Describe what you want your AI to do..."
+                          className="w-full bg-white/5 border-white/20 text-white placeholder-blue-200 resize-none"
+                          style={{
+                            height: '80px',
+                            wordWrap: 'break-word',
+                            whiteSpace: 'pre-wrap',
+                            overflowY: 'auto',
+                            overflowX: 'hidden'
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSubmit(e);
+                            }
+                          }}
+                        />
+                      </div>
                       <Button
                         type="submit"
                         disabled={!prompt.trim() || isProcessing}
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6"
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 flex-shrink-0 h-[80px]"
+                        onClick={handleSubmit}
                       >
                         {isProcessing ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -293,18 +310,20 @@ export default function Dashboard() {
                         )}
                       </Button>
                     </div>
-                  </form>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            <PromptSuggestions onSuggestionClick={setPrompt} />
+          <div className="space-y-6 h-[700px] flex flex-col">
+            <div className="flex-1">
+              <PromptSuggestions onSuggestionClick={setPrompt} />
+            </div>
             
             {/* Quick Actions */}
-            <Card className="bg-black/20 backdrop-blur-xl border-white/10">
+            <Card className="bg-black/20 backdrop-blur-xl border-white/10 flex-shrink-0">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Zap className="w-5 h-5 text-amber-400" />

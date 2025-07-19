@@ -93,12 +93,12 @@ export default function JsonViewer({ json, onCopy, onDownload }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="border border-white/20 rounded-lg bg-black/20 backdrop-blur-sm">
+      <div className="flex items-center justify-between p-3 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <Braces className="w-4 h-4 text-blue-400" />
-          <span className="text-sm text-blue-300">Generated JSON</span>
-          <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/30">
+          <Braces className="w-4 h-4 text-green-400" />
+          <span className="text-sm font-medium text-white">Generated JSON</span>
+          <Badge variant="outline" className="text-xs bg-green-500/20 text-green-300 border-green-500/30">
             {lineCount} lines
           </Badge>
         </div>
@@ -108,58 +108,66 @@ export default function JsonViewer({ json, onCopy, onDownload }) {
             variant="ghost"
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-blue-400 hover:text-blue-300"
+            className="text-white hover:bg-white/10"
           >
-            {isExpanded ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {isExpanded ? 'Collapse' : 'Expand'}
+            {isExpanded ? (
+              <>
+                <EyeOff className="w-4 h-4 mr-1" />
+                Collapse
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-1" />
+                Expand
+              </>
+            )}
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={onCopy}
-            className="text-blue-400 hover:text-blue-300"
+            className="text-white hover:bg-white/10"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-4 h-4 mr-1" />
             Copy
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={onDownload}
-            className="text-blue-400 hover:text-blue-300"
+            className="text-white hover:bg-white/10"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4 mr-1" />
             Download
           </Button>
         </div>
       </div>
-
+      
       <AnimatePresence>
-        {isExpanded ? (
+        {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg p-4 overflow-hidden"
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
           >
-            <div className="max-h-96 overflow-y-auto">
-              {renderJsonValue(json)}
+            <div className="p-4 max-h-96 overflow-y-auto">
+              <div className="space-y-2 text-sm break-words">
+                {renderJsonValue(json)}
+              </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg p-4"
-          >
-            <pre className="text-xs text-green-300 font-mono overflow-x-auto">
-              {jsonString.split('\n').slice(0, 5).join('\n')}
-              {lineCount > 5 && '\n...'}
-            </pre>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {!isExpanded && (
+        <div className="p-4">
+          <pre className="text-sm text-gray-300 bg-black/30 p-3 rounded overflow-x-auto max-h-32 overflow-y-auto break-words whitespace-pre-wrap">
+            {jsonString.length > 500 ? jsonString.substring(0, 500) + '...' : jsonString}
+          </pre>
+        </div>
+      )}
     </div>
   );
 } 

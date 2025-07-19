@@ -6,92 +6,117 @@ import urlResolver from '../lib/urlResolver.js'
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch.js'
 
 export default function Callback() {
-  const { user, isAuthenticated, isLoading } = useKindeAuth()
+  const { user, isAuthenticated, isLoading, error: kindeError } = useKindeAuth()
   const navigate = useNavigate()
   const authenticatedFetch = useAuthenticatedFetch()
   const [syncStatus, setSyncStatus] = useState('loading')
   const [errorMessage, setErrorMessage] = useState('')
   const [shouldRedirect, setShouldRedirect] = useState(false)
   const [hasSynced, setHasSynced] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+
+  // Handle Kinde authentication errors
+  useEffect(() => {
+    if (kindeError) {
+      console.error('Kinde authentication error:', kindeError)
+      setSyncStatus('error')
+      setErrorMessage('Authentication failed. Please try logging in again.')
+    }
+  }, [kindeError])
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      setShouldRedirect(true)
+    if (!isLoading && !isAuthenticated && !kindeError) {
+      // If not authenticated and no error, redirect to login after delay
+      const timer = setTimeout(() => {
+        setShouldRedirect(true)
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-  }, [isLoading, isAuthenticated, navigate])
+  }, [isLoading, isAuthenticated, kindeError])
 
   useEffect(() => {
     if (shouldRedirect) {
-      navigate('/dashboard')
+      navigate('/')
     }
   }, [shouldRedirect, navigate])
 
+  const handleRetry = () => {
+    if (retryCount < 2) {
+      setRetryCount(prev => prev + 1)
+      setSyncStatus('loading')
+      setErrorMessage('')
+      setHasSynced(false)
+      // Force reload to retry authentication
+      window.location.reload()
+    } else {
+      // Too many retries, redirect to home
+      navigate('/')
+    }
+  }
+
   useEffect(() => {
     const syncUser = async () => {
-      if (!isAuthenticated || !user) {
+      if (!isAuthenticated || !user || kindeError) {
         return
       }
 
       try {
         const syncUrl = urlResolver.getSyncUserUrl()
 
-        // Check if the backend is reachable first
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
 
         const response = await authenticatedFetch(syncUrl, {
           method: 'POST',
+          signal: controller.signal,
           body: JSON.stringify({
             kindeId: user.id,
             email: user.email,
             givenName: user.givenName,
             familyName: user.familyName,
-            picture: null,
-            isEmailVerified: false
+            picture: user.picture || null,
+            isEmailVerified: user.email_verified || false
           }),
         })
         clearTimeout(timeoutId)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
         const result = await response.json()
         
         if (result.success) {
           console.log('✅ User synced successfully')
           setSyncStatus('success')
           
-          // Redirect to main app after a short delay
           setTimeout(() => {
-            navigate('/')
+            navigate('/dashboard')
           }, 1500)
         } else {
           console.error('❌ User sync failed:', result.error)
           setSyncStatus('error')
-          setErrorMessage(result.error || 'Failed to sync user')
+          setErrorMessage(result.error || 'Failed to sync user data')
         }
       } catch (err) {
         console.error('❌ Network error during sync:', err)
         setSyncStatus('error')
         
-        if (err instanceof Error) {
-          if (err.name === 'AbortError') {
-            setErrorMessage('Request timed out. Please check if the backend server is running.')
-          } else if (err.message.includes('CORS')) {
-            setErrorMessage('CORS error. Please ensure the backend server is running and configured properly.')
-          } else if (err.message.includes('Failed to fetch')) {
-            setErrorMessage('Cannot connect to backend server. Please ensure it is running on port 8080.')
-          } else {
-            setErrorMessage('Network error. Please try again.')
-          }
+        if (err.name === 'AbortError') {
+          setErrorMessage('Request timed out. Please check your connection and try again.')
+        } else if (err.message.includes('Failed to fetch')) {
+          setErrorMessage('Cannot connect to server. Please ensure the backend is running.')
         } else {
-          setErrorMessage('Unknown error occurred.')
+          setErrorMessage(`Sync failed: ${err.message}`)
         }
       }
     }
 
-    // Only sync if we have user data and haven't synced yet
-    if (isAuthenticated && user && !hasSynced) {
+    if (isAuthenticated && user && !hasSynced && !kindeError) {
       setHasSynced(true)
       syncUser()
     }
-  }, [isAuthenticated, user, navigate, hasSynced, authenticatedFetch])
+  }, [isAuthenticated, user, navigate, hasSynced, authenticatedFetch, kindeError])
 
   // Show loading while Kinde is initializing
   if (isLoading) {
@@ -99,19 +124,41 @@ export default function Callback() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Initializing authentication...</p>
+          <p className="text-gray-600">Authenticating...</p>
+          <p className="text-sm text-gray-500 mt-2">This may take a moment...</p>
         </div>
       </div>
     )
   }
 
-  // If not authenticated, show loading while redirecting
-  if (!isAuthenticated) {
+  // If Kinde error or not authenticated after loading
+  if (kindeError || (!isAuthenticated && !isLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Redirecting to login...</p>
+        <div className="text-center max-w-md">
+          <XCircle className="h-12 w-12 mx-auto mb-4 text-red-600" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Authentication Error
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {kindeError?.message || errorMessage || 'Authentication failed. Please try again.'}
+          </p>
+          <div className="space-y-2">
+            <button
+              onClick={handleRetry}
+              disabled={retryCount >= 2}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mr-2 flex items-center justify-center w-full disabled:opacity-50"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {retryCount >= 2 ? 'Maximum retries reached' : `Retry (${retryCount + 1}/3)`}
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center justify-center w-full"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     )

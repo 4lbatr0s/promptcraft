@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Lightbulb, 
   MessageSquare, 
@@ -65,36 +66,38 @@ export default function PromptSuggestions({ onSuggestionClick }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {suggestions.map((category, categoryIndex) => (
-          <motion.div
-            key={category.category}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: categoryIndex * 0.1 }}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <div className={`p-1 rounded bg-gradient-to-r ${category.color} bg-opacity-20`}>
-                <category.icon className="w-4 h-4 text-white" />
+        <ScrollArea className="h-[300px] pr-4">
+          {suggestions.map((category, categoryIndex) => (
+            <motion.div
+              key={category.category}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: categoryIndex * 0.1 }}
+              className="space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <div className={`p-1 rounded bg-gradient-to-r ${category.color} bg-opacity-20`}>
+                  <category.icon className="w-4 h-4 text-white" />
+                </div>
+                <Badge variant="outline" className="text-xs bg-white/10 text-white border-white/20">
+                  {category.category}
+                </Badge>
               </div>
-              <Badge variant="outline" className="text-xs bg-white/10 text-white border-white/20">
-                {category.category}
-              </Badge>
-            </div>
-            <div className="space-y-1">
-              {category.prompts.map((prompt, promptIndex) => (
-                <Button
-                  key={promptIndex}
-                  variant="ghost"
-                  className="w-full text-left justify-start text-xs text-blue-200 hover:text-white hover:bg-white/5 h-auto p-2"
-                  onClick={() => onSuggestionClick(prompt)}
-                >
-                  {prompt}
-                </Button>
-              ))}
-            </div>
-          </motion.div>
-        ))}
+              <div className="space-y-1">
+                {category.prompts.map((prompt, promptIndex) => (
+                  <Button
+                    key={promptIndex}
+                    variant="ghost"
+                    className="w-full text-left justify-start text-xs text-blue-200 hover:text-white hover:bg-white/5 h-auto p-2"
+                    onClick={() => onSuggestionClick(prompt)}
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
+            </motion.div>
+          ))}
+        </ScrollArea>
       </CardContent>
     </Card>
   );

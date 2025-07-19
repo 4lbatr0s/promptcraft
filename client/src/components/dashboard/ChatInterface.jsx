@@ -24,7 +24,7 @@ export default function ChatInterface({ message, onCopy, onDownload, isStreaming
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}
+      className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'} w-full`}
     >
       {!isUser && (
         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -32,15 +32,17 @@ export default function ChatInterface({ message, onCopy, onDownload, isStreaming
         </div>
       )}
       
-      <div className={`max-w-[80%] ${isUser ? 'order-first' : ''}`}>
+      <div className={`max-w-[85%] min-w-0 ${isUser ? 'order-first' : ''}`}>
         <Card className={`${
           isUser 
             ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
             : 'bg-black/30 backdrop-blur-xl border-white/10 text-white'
-        } ${isError ? 'border-red-500/30 bg-red-900/20' : ''}`}>
-          <div className="p-4">
+        } ${isError ? 'border-red-500/30 bg-red-900/20' : ''} w-full`}>
+          <div className="p-4 overflow-hidden">
             {isUser ? (
-              <p className="text-white">{message.content}</p>
+              <div className="break-words whitespace-pre-wrap overflow-wrap-anywhere">
+                {message.content}
+              </div>
             ) : (
               <div className="space-y-3">
                 {isStreaming ? (
@@ -63,11 +65,13 @@ export default function ChatInterface({ message, onCopy, onDownload, isStreaming
                   </div>
                 ) : isError ? (
                   <div className="flex items-center gap-2 text-red-300">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{message.content}</span>
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span className="break-words overflow-wrap-anywhere">{message.content}</span>
                   </div>
                 ) : (
-                  <p>{message.content}</p>
+                  <div className="break-words whitespace-pre-wrap overflow-wrap-anywhere">
+                    {message.content}
+                  </div>
                 )}
               </div>
             )}
