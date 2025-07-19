@@ -24,7 +24,14 @@ export const convertPrompt = async (req, res) => {
       userId: req.user.id,
     })
     
-    res.json({ success: true, data: record })
+    // Return only the optimized JSON, no metadata
+    res.json({ 
+      success: true, 
+      data: {
+        optimizedJson: json,
+        recordId: record._id
+      }
+    })
   } catch (err) {
     logger.error('Prompt conversion error:', err)
     res.status(500).json({ 
@@ -73,10 +80,9 @@ export const convertPromptStream = async (req, res) => {
     
     const { provider, json } = await convertPromptWithFallbackStream(prompt, onChunk)
     
-    // Send the final complete result
+    // Send the final complete result - only the JSON, no metadata
     res.write(`data: ${JSON.stringify({ 
       type: 'complete', 
-      provider: provider,
       json: json 
     })}\n\n`)
     
